@@ -33,8 +33,8 @@ resource "aws_iam_instance_profile" "ec2_instance_profile_docker_flask_demo" {
 }
 
 # ✅ Security Group to allow SSH (22) and HTTP (80)
-resource "aws_security_group" "web_sg_v21" {
-  name        = "webs-sg-21"
+resource "aws_security_group" "web_sg" {
+  name        = "webs-sg-v21"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
@@ -72,7 +72,7 @@ resource "aws_instance" "web_server" {
   ami                    = "ami-0cfd0973db26b893b" # Amazon Linux 2
   instance_type          = "t2.micro"
   key_name               = "uthman-key-verified"   # 👈 Must match .pem from AWS Console
-  vpc_security_group_ids = [aws_security_group.web_sg_v2]
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile_docker_flask_demo
 
   user_data = <<-EOF
