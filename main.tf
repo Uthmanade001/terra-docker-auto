@@ -34,7 +34,7 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 
 # ✅ Security Group to allow SSH (22) and HTTP (80)
 resource "aws_security_group" "web_sg" {
-  name        = "web-sg"
+  name        = "webs-sg"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
