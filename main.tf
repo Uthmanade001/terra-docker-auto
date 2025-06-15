@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 # ✅ IAM Role for EC2 to pull from ECR
-resource "aws_iam_role" "ec2_ecr_role" {
+resource "aws_iam_role" "ec2_ecr_role_docker_flask_demo" {
   name = "ec2-ecr-role-docker-flask-demo"
 
   assume_role_policy = jsonencode({
@@ -27,14 +27,14 @@ resource "aws_iam_role_policy_attachment" "ecr_policy_attachment" {
 }
 
 # ✅ Instance Profile for EC2 to assume the role
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
+resource "aws_iam_instance_profile" "ec2_instance_profile_docker_flask_demo" {
   name = "ec2-instance-profile-docker-flask-demo"
   role = aws_iam_role.ec2_ecr_role.name
 }
 
 # ✅ Security Group to allow SSH (22) and HTTP (80)
-resource "aws_security_group" "web_sg" {
-  name        = "webs-sg"
+resource "aws_security_group" "web_sg_v21" {
+  name        = "webs-sg-21"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
