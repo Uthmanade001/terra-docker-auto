@@ -3,8 +3,8 @@ provider "aws" {
 }
 
 # ✅ IAM Role for EC2 to pull from ECR
-resource "aws_iam_role" "ec2_ecr_role_docker_flask_demo" {
-  name = "ec2-ecr-role-docker-flask-demo"
+resource "aws_iam_role" "ec2_ecr_role" {
+  name = "ec2-ecr-role-v5"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -22,19 +22,19 @@ resource "aws_iam_role" "ec2_ecr_role_docker_flask_demo" {
 
 # ✅ Attach AmazonEC2ContainerRegistryReadOnly to the Role
 resource "aws_iam_role_policy_attachment" "ecr_policy_attachment" {
-  role       = aws_iam_role.ec2_ecr_role_docker_flask_demo
+  role       = aws_iam_role.ec2_ecr_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
 # ✅ Instance Profile for EC2 to assume the role
-resource "aws_iam_instance_profile" "ec2_instance_profile_docker_flask_demo" {
-  name = "ec2-instance-profile-docker-flask-demo"
-  role = aws_iam_role.ec2_ecr_role_docker_flask_demo
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "ec2-instance-profile-v5"
+  role = aws_iam_role.ec2_ecr_role.name
 }
 
 # ✅ Security Group to allow SSH (22) and HTTP (80)
 resource "aws_security_group" "web_sg" {
-  name        = "webs-sg-v21"
+  name        = "web-sg-v5"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
@@ -73,7 +73,7 @@ resource "aws_instance" "web_server" {
   instance_type          = "t2.micro"
   key_name               = "uthman-key-verified"   # 👈 Must match .pem from AWS Console
   vpc_security_group_ids = [aws_security_group.web_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile_docker_flask_demo
+  iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
 
   user_data = <<-EOF
               #!/bin/bash
