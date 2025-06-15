@@ -28,5 +28,9 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Apply
+      - name: terraform apply \
+             -replace=aws_iam_instance_profile.ec2_instance_profile \
+             -replace=aws_security_group.web_sg
         run: terraform apply -auto-approve
+      
+
