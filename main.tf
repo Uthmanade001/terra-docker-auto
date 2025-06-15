@@ -28,7 +28,7 @@ resource "aws_iam_role_policy_attachment" "ecr_policy_attachment" {
 
 # ✅ Instance Profile for EC2 to assume the role
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2-instance-profile"
+  name = "ec2-instance-profile-docker-flask-demo"
   role = aws_iam_role.ec2_ecr_role.name
 }
 
