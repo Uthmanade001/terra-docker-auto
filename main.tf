@@ -4,7 +4,7 @@ provider "aws" {
 
 # ✅ IAM Role for EC2 to pull from ECR
 resource "aws_iam_role" "ec2_ecr_role" {
-  name = "ec2-ecr-role"
+  name = "ec2-ecr-role-docker-flask-demo"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
