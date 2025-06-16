@@ -82,43 +82,52 @@ resource "aws_instance" "web_server" {
   iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
 
   user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              amazon-linux-extras install docker -y
-              service docker start
-              usermod -a -G docker ec2-user
-              yum install -y amazon-cloudwatch-agent
+            #!/bin/bash
+            dnf update -y
+            dnf install -y docker
+            systemctl enable docker
+            systemctl start docker
+            usermod -aG docker ec2-user
 
-              docker login -u AWS -p $(aws ecr get-login-password --region eu-west-2) 162811751175.dkr.ecr.eu-west-2.amazonaws.com
-              docker pull 162811751175.dkr.ecr.eu-west-2.amazonaws.com/flask-demo:latest
-              docker run -d --name flask-demo -p 80:80 162811751175.dkr.ecr.eu-west-2.amazonaws.com/flask-demo:latest
+            yum install -y amazon-cloudwatch-agent
 
-              mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
-              cat <<EOT > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-              {
-                "logs": {
-                  "logs_collected": {
-                    "files": {
-                      "collect_list": [
-                        {
-                          "file_path": "/var/lib/docker/containers/*/*.log",
-                          "log_group_name": "flask-demo-logs",
-                          "log_stream_name": "{instance_id}"
-                        }
-                      ]
-                    }
+            docker login -u AWS -p $(aws ecr get-login-password --region eu-west-2) 162811751175.dkr.ecr.eu-west-2.amazonaws.com
+            docker pull 162811751175.dkr.ecr.eu-west-2.amazonaws.com/flask-demo:latest
+            docker run -d --name flask-demo -p 80:80 162811751175.dkr.ecr.eu-west-2.amazonaws.com/flask-demo:latest
+
+            mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
+            cat <<EOT > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+            {
+              "logs": {
+                "logs_collected": {
+                  "files": {
+                    "collect_list": [
+                      {
+                        "file_path": "/var/lib/docker/containers/*/*.log",
+                        "log_group_name": "flask-demo-logs",
+                        "log_stream_name": "{instance_id}"
+                      }
+                    ]
                   }
                 }
               }
-              EOT
+            }
+            EOT
 
-              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-                -a fetch-config -m ec2 \
-                -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
-                -s
-              EOF
+            /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+              -a fetch-config -m ec2 \
+              -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+              -s
+            EOF
+
 
   tags = {
     Name = "docker-flask-demo"
   }
+}
+# Attach CloudWatch Logs policy to the Role
+resource "aws_iam_policy_attachment" "cloudwatch_logs" {
+  name       = "attach-cloudwatch-logs"
+  roles      = [aws_iam_role.ec2_ecr_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
