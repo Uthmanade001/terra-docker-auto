@@ -4,7 +4,7 @@ provider "aws" {
 
 # ✅ IAM Role for EC2 to pull from ECR
 resource "aws_iam_role" "ec2_ecr_role" {
-  name = "ec2-ecr-role-v6"
+  name = "ec2-ecr-role-v7"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -34,13 +34,13 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_logs" {
 
 # ✅ Instance Profile for EC2 to assume the role
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2-instance-profile-v6"
+  name = "ec2-instance-profile-v7"
   role = aws_iam_role.ec2_ecr_role.name
 }
 
 # ✅ Security Group to allow SSH (22) and HTTP (80)
 resource "aws_security_group" "web_sg" {
-  name        = "web-sg-v6"
+  name        = "web-sg-v7"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
