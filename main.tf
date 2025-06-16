@@ -4,7 +4,7 @@ provider "aws" {
 
 # ✅ IAM Role for EC2 to pull from ECR
 resource "aws_iam_role" "ec2_ecr_role" {
-  name = "ec2-ecr-role-docker-flask-demo"
+  name = "ec2-ecr-role-v5"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -26,15 +26,21 @@ resource "aws_iam_role_policy_attachment" "ecr_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# ✅ Attach CloudWatch Logs policy to the Role
+resource "aws_iam_role_policy_attachment" "cloudwatch_logs" {
+  role       = aws_iam_role.ec2_ecr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
 # ✅ Instance Profile for EC2 to assume the role
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2-instance-profile-docker-flask-demo"
+  name = "ec2-instance-profile-v5"
   role = aws_iam_role.ec2_ecr_role.name
 }
 
 # ✅ Security Group to allow SSH (22) and HTTP (80)
 resource "aws_security_group" "web_sg" {
-  name        = "web-sg"
+  name        = "web-sg-v5"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
@@ -71,21 +77,45 @@ data "aws_vpc" "default" {
 resource "aws_instance" "web_server" {
   ami                    = "ami-0cfd0973db26b893b" # Amazon Linux 2
   instance_type          = "t2.micro"
-  key_name               = "uthman-key-verified"   # 👈 Must match .pem from AWS Console
+  key_name               = "uthman-key-verified"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
 
   user_data = <<-EOF
               #!/bin/bash
               yum update -y
-              yum install -y docker
-              systemctl start docker
+              amazon-linux-extras install docker -y
+              service docker start
               usermod -a -G docker ec2-user
+              yum install -y amazon-cloudwatch-agent
 
-              # Log in to ECR and run container
-              aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 162811751175.dkr.ecr.eu-west-2.amazonaws.com
+              docker login -u AWS -p $(aws ecr get-login-password --region eu-west-2) 162811751175.dkr.ecr.eu-west-2.amazonaws.com
               docker pull 162811751175.dkr.ecr.eu-west-2.amazonaws.com/flask-demo:latest
-              docker run -d -p 80:80 162811751175.dkr.ecr.eu-west-2.amazonaws.com/flask-demo:latest
+              docker run -d --name flask-demo -p 80:80 162811751175.dkr.ecr.eu-west-2.amazonaws.com/flask-demo:latest
+
+              mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
+              cat <<EOT > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+              {
+                "logs": {
+                  "logs_collected": {
+                    "files": {
+                      "collect_list": [
+                        {
+                          "file_path": "/var/lib/docker/containers/*/*.log",
+                          "log_group_name": "flask-demo-logs",
+                          "log_stream_name": "{instance_id}"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+              EOT
+
+              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+                -a fetch-config -m ec2 \
+                -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+                -s
               EOF
 
   tags = {
