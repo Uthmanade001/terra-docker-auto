@@ -4,7 +4,7 @@ provider "aws" {
 
 # ✅ IAM Role for EC2 to pull from ECR
 resource "aws_iam_role" "ec2_ecr_role" {
-  name = "ec2-ecr-role-v7"
+  name = "ec2-ecr-role-v8"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -34,13 +34,30 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_logs" {
 
 # ✅ Instance Profile for EC2 to assume the role
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2-instance-profile-v7"
+  name = "ec2-instance-profile-v8"
   role = aws_iam_role.ec2_ecr_role.name
 }
+# ✅ CloudWatch Log Group for Flask app logs
+resource "aws_cloudwatch_metric_alarm" "high_cpu_alarm" {
+  alarm_name          = "high-cpu-alarm-docker"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 70
+  alarm_description   = "Triggered when CPU > 70% for 2 minutes"
+  dimensions = {
+    InstanceId = aws_instance.web_server.id
+  }
+  alarm_actions = [] # (Optional) Add SNS topic ARN here to get email/text alerts
+}
+
 
 # ✅ Security Group to allow SSH (22) and HTTP (80)
 resource "aws_security_group" "web_sg" {
-  name        = "web-sg-v7"
+  name        = "web-sg-v8"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
